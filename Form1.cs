@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Windows.Forms;
-using Ionic.Zlib;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
 
 namespace SplitImageFiles
 {
@@ -15,25 +15,87 @@ namespace SplitImageFiles
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void btnSplitTiff_Click(object sender, EventArgs e)
         {
-            OpenFileDialog openFileDialog1 = new OpenFileDialog();
-            openFileDialog1.Filter = "TIFF files (*.tiff)|*.tiff|PDF files (*.pdf)|*.pdf";
-            openFileDialog1.FilterIndex = 1;
-            openFileDialog1.RestoreDirectory = true;
-            openFileDialog1.Multiselect = true;
+            OpenFileDialog openFileDialog1 = new OpenFileDialog
+            {
+                Filter = "TIFF files (*.tiff)|*.tiff",
+                Multiselect = true,
+                RestoreDirectory = true
+            };
 
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
                 foreach (string file in openFileDialog1.FileNames)
                 {
-                    if (Path.GetExtension(file).ToLower() == ".tiff")
+                    try
                     {
                         SplitTiff(file);
+                        MessageBox.Show($"Successfully split {file} into TIFF images.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
-                    else if (Path.GetExtension(file).ToLower() == ".pdf")
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error processing file {file}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void btnSplitPdf_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFileDialog1 = new OpenFileDialog
+            {
+                Filter = "PDF files (*.pdf)|*.pdf",
+                Multiselect = true,
+                RestoreDirectory = true
+            };
+
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
+            {
+                foreach (string file in openFileDialog1.FileNames)
+                {
+                    try
                     {
                         SplitPdf(file);
+                        MessageBox.Show($"Successfully split {file} into PDF files.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error processing file {file}: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void btnConvertFolder_Click(object sender, EventArgs e)
+        {
+            using (FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog())
+            {
+                if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+                {
+                    string selectedPath = folderBrowserDialog.SelectedPath;
+
+                    try
+                    {
+                        // Process all TIFF files
+                        string[] tiffFiles = Directory.GetFiles(selectedPath, "*.tiff", SearchOption.AllDirectories);
+                        foreach (string file in tiffFiles)
+                        {
+                            SplitTiff(file);
+                        }
+
+                        // Process all PDF files
+                        string[] pdfFiles = Directory.GetFiles(selectedPath, "*.pdf", SearchOption.AllDirectories);
+                        foreach (string file in pdfFiles)
+                        {
+                            SplitPdf(file);
+                        }
+
+                        MessageBox.Show($"Successfully processed TIFF and PDF files from {selectedPath}.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error processing files in folder: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
@@ -41,20 +103,17 @@ namespace SplitImageFiles
 
         private void SplitTiff(string filePath)
         {
-            using (Image image = Image.FromFile(filePath))
+            using (System.Drawing.Image image = System.Drawing.Image.FromFile(filePath))
             {
-                int width = image.Width;
-                int height = image.Height;
-                int rows = height / 100; // adjust the number of rows as needed
-                int cols = width / 100; // adjust the number of columns as needed
-
-                for (int row = 0; row < rows; row++)
+                var frameCount = image.GetFrameCount(FrameDimension.Page);
+                for (int i = 0; i < frameCount; i++)
                 {
-                    for (int col = 0; col < cols; col++)
+                    image.SelectActiveFrame(FrameDimension.Page, i);
+                    using (System.Drawing.Image page = new Bitmap(image))
                     {
-                        Rectangle rect = new Rectangle(col * width / cols, row * height / rows, width / cols, height / rows);
-                        Image newImage = image.Clone(new Rectangle(rect.X, rect.Y, rect.Width, rect.Height), image.PixelFormat);
-                        newImage.Save($"C:\\Split\\{Path.GetFileNameWithoutExtension(filePath)}_{row}_{col}.{Path.GetExtension(filePath)}");
+                        string directory = "C:\\Split";  // Ensure directory exists
+                        Directory.CreateDirectory(directory);
+                        page.Save(Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(filePath)}_page_{i + 1}.tiff"), ImageFormat.Tiff);
                     }
                 }
             }
@@ -62,73 +121,42 @@ namespace SplitImageFiles
 
         private void SplitPdf(string filePath)
         {
-            iTextSharp.text.Document pdfDoc = new iTextSharp.text.Document();
-            iTextSharp.text.pdf.PdfReader pdfReader = new iTextSharp.text.pdf.PdfReader(filePath);
-            int totalPages = pdfReader.NumberOfPages;
-
-            for (int page = 1; page <= totalPages; page++)
+            try
             {
-                iTextSharp.text.pdf.PdfImportedPage pageObj = pdfReader.GetImportedPage(page);
-                iTextSharp.text.Document document = new iTextSharp.text.Document(pageObj.GetWidth(), pageObj.GetHeight());
-                PdfContentByte pdfContentByte = pdfReader.GetPageContent(page);
-
-                using (MemoryStream ms = new MemoryStream())
+                using (PdfDocument inputDocument = PdfReader.Open(filePath, PdfDocumentOpenMode.Import))
                 {
-                    PdfWriter writer = PdfWriter.GetInstance(document, ms);
-                    document.Open();
-
-                    document.Add(pageObj);
-
-                    document.Close();
-                    ms.Position = 0;
-
-                    byte[] bytes = ms.ToArray();
-                    using (MemoryStream ms2 = new MemoryStream(bytes))
+                    if (inputDocument.PageCount == 0)
                     {
-                        using (Image image = Image.FromStream(ms2))
-                        {
-                            int width = image.Width;
-                            int height = image.Height;
-                            int rows = height / 100; // adjust the number of rows as needed
-                            int cols = width / 100; // adjust the number of columns as needed
+                        MessageBox.Show("The PDF file does not contain any pages.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
 
-                            for (int row = 0; row < rows; row++)
-                            {
-                                for (int col = 0; col < cols; col++)
-                                {
-                                    Rectangle rect = new Rectangle(col * width / cols, row * height / rows, width / cols, height / rows);
-                                    Image newImage = image.Clone(new Rectangle(rect.X, rect.Y, rect.Width, rect.Height), image.PixelFormat);
-                                    newImage.Save($"C:\\Split\\{Path.GetFileNameWithoutExtension(filePath)}_{page}_{row}_{col}.{Path.GetExtension(filePath)}");
-                                }
-                            }
+                    int totalPages = inputDocument.PageCount;
+                    string directory = "C:\\Split";  // Ensure directory exists
+                    Directory.CreateDirectory(directory);
+
+                    for (int pageIdx = 0; pageIdx < totalPages; pageIdx++)
+                    {
+                        using (PdfDocument outputDocument = new PdfDocument())
+                        {
+                            outputDocument.AddPage(inputDocument.Pages[pageIdx]);
+                            string newFilePath = Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(filePath)}_page_{pageIdx + 1}.pdf");
+                            outputDocument.Save(newFilePath);
                         }
                     }
+
+                    MessageBox.Show($"Successfully split {totalPages} pages from {filePath}.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An unexpected error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void label1_Click(object sender, EventArgs e)
         {
-            FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-            folderBrowserDialog1.RootFolder = Environment.SpecialFolder.MyComputer;
-            folderBrowserDialog1.ShowNewFolderButton = true;
-
-            if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
-            {
-                string folderPath = folderBrowserDialog1.SelectedPath;
-
-                foreach (string file in Directory.GetFiles(folderPath))
-                {
-                    if (Path.GetExtension(file).ToLower() == ".tiff")
-                    {
-                        SplitTiff(file);
-                    }
-                    else if (Path.GetExtension(file).ToLower() == ".pdf")
-                    {
-                        SplitPdf(file);
-                    }
-                }
-            }
+            MessageBox.Show($"Support and feedback: support@iuliani.com");
         }
     }
 }
