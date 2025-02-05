@@ -10,9 +10,37 @@ namespace SplitImageFiles
 {
     public partial class Form1 : Form
     {
-        public Form1()
+        string outputDirectory;
+
+       public Form1()
         {
             InitializeComponent();
+           
+                        // to look for the config file.
+                        outputDirectory = LoadConfiguration(AppDomain.CurrentDomain.BaseDirectory);
+        }
+
+        private string LoadConfiguration(string directory)
+        {
+            string configFilePath = System.IO.Path.Combine(directory, "config.txt"); // Combine the directory with the config file name
+            string outputDirectory;
+
+            if (File.Exists(configFilePath))
+            {
+                var lines = File.ReadAllLines(configFilePath);
+                foreach (var line in lines)
+                {
+                    if (line.StartsWith("OutputDirectory="))
+                    {
+                        outputDirectory = line.Substring("OutputDirectory=".Length);
+                        return outputDirectory;
+                    }
+                }
+            }
+
+            // Fallback to default if config file is not found or OutputDirectory is not set
+            outputDirectory = "C:\\Split";
+            return outputDirectory;
         }
 
         private void btnSplitTiff_Click(object sender, EventArgs e)
@@ -31,7 +59,7 @@ namespace SplitImageFiles
                     try
                     {
                         SplitTiff(file);
-                        MessageBox.Show($"Successfully split {file} into TIFF images.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                      //  MessageBox.Show($"Successfully split {file} into TIFF images.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
@@ -57,7 +85,7 @@ namespace SplitImageFiles
                     try
                     {
                         SplitPdf(file);
-                        MessageBox.Show($"Successfully split {file} into PDF files.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                       // MessageBox.Show($"Successfully split {file} into PDF files.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
@@ -111,9 +139,9 @@ namespace SplitImageFiles
                     image.SelectActiveFrame(FrameDimension.Page, i);
                     using (System.Drawing.Image page = new Bitmap(image))
                     {
-                        string directory = "C:\\Split";  // Ensure directory exists
-                        Directory.CreateDirectory(directory);
-                        page.Save(Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(filePath)}_page_{i + 1}.tiff"), ImageFormat.Tiff);
+                        // Use outputDirectory here
+                        Directory.CreateDirectory(outputDirectory); // Ensure directory exists
+                        page.Save(Path.Combine(outputDirectory, $"{Path.GetFileNameWithoutExtension(filePath)}_page_{i + 1}.tiff"), ImageFormat.Tiff);
                     }
                 }
             }
@@ -132,15 +160,15 @@ namespace SplitImageFiles
                     }
 
                     int totalPages = inputDocument.PageCount;
-                    string directory = "C:\\Split";  // Ensure directory exists
-                    Directory.CreateDirectory(directory);
+                    // Use outputDirectory here
+                    Directory.CreateDirectory(outputDirectory); // Ensure directory exists
 
                     for (int pageIdx = 0; pageIdx < totalPages; pageIdx++)
                     {
                         using (PdfDocument outputDocument = new PdfDocument())
                         {
                             outputDocument.AddPage(inputDocument.Pages[pageIdx]);
-                            string newFilePath = Path.Combine(directory, $"{Path.GetFileNameWithoutExtension(filePath)}_page_{pageIdx + 1}.pdf");
+                            string newFilePath = Path.Combine(outputDirectory, $"{Path.GetFileNameWithoutExtension(filePath)}_page_{pageIdx + 1}.pdf");
                             outputDocument.Save(newFilePath);
                         }
                     }
