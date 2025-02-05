@@ -33,6 +33,8 @@ namespace SplitImageFiles
             this.btnSplitPdf = new System.Windows.Forms.Button();
             this.btnConvertFolder = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
             // btnSplitTiff
@@ -53,7 +55,7 @@ namespace SplitImageFiles
             this.btnSplitPdf.BackColor = System.Drawing.Color.LightSeaGreen;
             this.btnSplitPdf.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSplitPdf.ForeColor = System.Drawing.Color.White;
-            this.btnSplitPdf.Location = new System.Drawing.Point(249, 12);
+            this.btnSplitPdf.Location = new System.Drawing.Point(12, 69);
             this.btnSplitPdf.Name = "btnSplitPdf";
             this.btnSplitPdf.Size = new System.Drawing.Size(171, 40);
             this.btnSplitPdf.TabIndex = 1;
@@ -66,7 +68,7 @@ namespace SplitImageFiles
             this.btnConvertFolder.BackColor = System.Drawing.Color.DarkCyan;
             this.btnConvertFolder.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnConvertFolder.ForeColor = System.Drawing.Color.White;
-            this.btnConvertFolder.Location = new System.Drawing.Point(123, 143);
+            this.btnConvertFolder.Location = new System.Drawing.Point(12, 155);
             this.btnConvertFolder.Name = "btnConvertFolder";
             this.btnConvertFolder.Size = new System.Drawing.Size(178, 68);
             this.btnConvertFolder.TabIndex = 2;
@@ -86,20 +88,34 @@ namespace SplitImageFiles
             this.label1.Text = "lnfo";
             this.label1.Click += new System.EventHandler(this.label1_Click);
             // 
+            // pictureBox1
+            // 
+            this.pictureBox1.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox1.Image")));
+            this.pictureBox1.Location = new System.Drawing.Point(232, 30);
+            this.pictureBox1.Name = "pictureBox1";
+            this.pictureBox1.Size = new System.Drawing.Size(171, 182);
+            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.pictureBox1.TabIndex = 4;
+            this.pictureBox1.TabStop = false;
+            // 
             // Form1
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-            this.BackColor = System.Drawing.Color.White;
+            this.BackColor = System.Drawing.Color.MediumTurquoise;
+            this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
             this.ClientSize = new System.Drawing.Size(428, 304);
+            this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.btnConvertFolder);
             this.Controls.Add(this.btnSplitPdf);
             this.Controls.Add(this.btnSplitTiff);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "Form1";
-            this.Text = "File Splitter";
+            this.Text = "Image Splitter";
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -108,5 +124,6 @@ namespace SplitImageFiles
         #endregion
 
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.PictureBox pictureBox1;
     }
 }
